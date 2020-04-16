@@ -11,10 +11,16 @@ class TIN(object):
         self.__triangles=[]
         self.__domain = Domain()
 
-    def get_vertex(self,pos): #input: vertex index     output: The Vertex object in position pos in the vertex list. Index starts from 0.
+    def get_vertex(self,pos): #input: vertex index     
+        # output: The Vertex object in position pos in the vertex list. Index starts from 0.
         # should implement similar function for getting triangle from global array.
         try:
             return self.__vertices[pos]
+        except IndexError as e:
+            raise e
+    def get_tris(self, pos):
+        try:
+            return self.__triangles[pos]
         except IndexError as e:
             raise e
 
@@ -26,6 +32,9 @@ class TIN(object):
 
     def add_vertex(self,v): # v should be Vertex object.
         self.__vertices.append(v)
+    
+    def add_tri(self,tri): # tri should be a triangle triple whose value is the index of the vertex
+        self.__triangles.append(tri)
 
     def set_domain(self,min_p,max_p): # is used in read_tin_file when we read the vertices
         self.__domain = Domain(min_p,max_p)

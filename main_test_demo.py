@@ -42,25 +42,25 @@ def generate_TIN(pts_file):
     zs=list()
     with open(pts_file) as infile:
         lines_num= infile.readline().strip()
-        lines_num=int(lines_num)
+        lines_num=int(lines_num) # how many points we have
         for l in range(lines_num):
-            line = (infile.readline()).split()
+            line = (infile.readline()).split() # get three values of the point [x, y, z]
             v1 = float(line[0])
             v2 = float(line[1])
             existed_p = False
-            for p in points:
+            for p in points: # see if there is repeated points already
                 if p[0]==v1 and p[1]==v2:
                     existed_p = True
                     break
             if existed_p == False:
-                points = np.append(points, [[v1,v2]], axis=0)
-                zs.append(float(line[2]))
+                points = np.append(points, [[v1,v2]], axis=0) # add points. note the np-array
+                zs.append(float(line[2])) # add z value of this point into zs
     
-    triangles = Delaunay(points) 
+    triangles = Delaunay(points) # get the results of triangulation
     
-    tris = np.empty(shape=[0, 3])
+    tris = np.empty(shape=[0, 3]) # initiate the np array of storing triangles
     used_pts = set()
-    for tri in triangles.simplices:
+    for tri in triangles.simplices: # tri: e.g.[2,3,0], where the value is the index of the point in points array
         used_pts.add(tri[0])
         used_pts.add(tri[1])
         used_pts.add(tri[2])
@@ -68,7 +68,7 @@ def generate_TIN(pts_file):
     n2o = list()
     zs1 = list()
     points1= np.empty(shape=[0, 2])
-    for pid in used_pts:
+    for pid in used_pts: # pid is just the index referring to the point in points array
         points1 = np.append(points1,[[points[pid][0], points[pid][1]]],axis=0)
         o2n[pid] = len(points1)-1
         n2o.append(pid)
