@@ -25,7 +25,12 @@ class Tree(object):
             print ("INSERT POINT %s"%tin.get_vertex(i))  ## you can use this line to check the vertex input. Can comment it out if you don't need it.
             self.insert_vertex(self.__root,0,tin.get_domain(),i,tin)
         # ADD THE CODE for inserting its triangles
-        
+        print("START INPUT TRIANGLES")
+        for i in range(tin.get_tris_num()):
+            print("INSERT TRIANGLES " + tin.get_tris(i))
+            self.insert_triangle(self.__root,0,tin.get_domain(),i,tin)
+        print("Total number of triangles is " + tin.get_tris_num())
+        print("END INPUT TRIANGLES")
         #  End of the build_tree() function
 
     def insert_vertex(self,node,node_label,node_domain,v_index,tin):
@@ -47,6 +52,18 @@ class Tree(object):
                 for i in range(4):
                     s_label,s_domain = node.compute_child_label_and_domain(i,node_label,node_domain,mid_point)
                     self.insert_vertex(node.get_child(i),s_label,s_domain,v_index,tin)
+
+    def insert_triangle(self,node,node_label,node_domain,t_index,tin):
+        tri = tin.get_tris(t_index) # get the triangle (v1,v2,v3)
+        print("INSERT TRIANGLE " + t_index + " - " + tri[0] + " " + tri[1] + " " + tri[2])
+        for i in range(3): # three extreme vertices
+            v_index = tri[i] # get the index of the triangle vertex
+            vertex = tin.get_vertex(v_index) # get the corresponding vertex object
+            node_to_insert = point_query(node, node_label, node_domain, vertex, tin) # get the node to be inserted
+            if(t_index not in node_to_insert.get_triangles()): # if not already existing    
+                node_to_insert.add_triangle(t_index) # insert the triangle to the node
+
+
 
     def point_query(self, node, node_label, node_domain, search_point, tin):
         # node: Node object; node_label: int; node_domain: Domain object;search_point: Vertex object, the vertex you want to search
@@ -89,9 +106,7 @@ class Tree(object):
                         else:
                             s_label, s_domain = node.compute_child_label_and_domain(3, node_label, node_domain, mid_point)
                             ret_node = self.point_query(node.get_child(3), s_label, s_domain, search_point, tin)
-                            return ret_node
-
-    
+                            return ret_node    
 
     def get_points(self, tin, pts):
         """return xs,ys"""

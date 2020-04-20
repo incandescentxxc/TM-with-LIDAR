@@ -27,6 +27,9 @@ class TIN(object):
     def get_vertices_num(self):
         return len(self.__vertices)
 
+    def get_tris_num(self):
+        return len(self.__triangles)
+        
     def get_domain(self):
         return self.__domain
 

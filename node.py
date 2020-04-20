@@ -22,6 +22,9 @@ class Node(object):
         # Here the id is the index of the Vertex on the global list
         # Should implement similar function for adding triangle
         self.__vertex_ids.append(id)
+    def add_triangle(self,id): # When you add a triangle to a node, you add the index of it.
+        # Here the id is the index of the Vertex on the global list
+        self.__triangle_ids.append(id)
 
     def init_children(self): # initialize four empty Nodes as the children.
         self.__children = [Node() for _ in range(4)]
@@ -61,6 +64,9 @@ class Node(object):
 
     def get_vertices(self): # returns the list of vertex ids. Should implement similar function for triangles.
         return self.__vertex_ids
+    
+    def get_triangles(self): # returns the list of triangle ids.
+        return self.__triangle_ids
 
     def get_vertices_num(self):
         return len(self.__vertex_ids)
