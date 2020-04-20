@@ -34,7 +34,7 @@ class Reader(object):
                 line = (infile.readline().split())
                 tri = (int(line[1]), int(line[2]), int(line[3]))
                 tin.add_tri(tri)
-            print("Total number of triangles added is " + int(tris_num))
+            print("Total number of triangles added is " + str(tris_num))
             print("END INPUT TRIANGLES")
             ###### FINISH AS ABOVE
             infile.close() # close the file after input.

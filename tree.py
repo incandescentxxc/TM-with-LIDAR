@@ -25,13 +25,35 @@ class Tree(object):
             print ("INSERT POINT %s"%tin.get_vertex(i))  ## you can use this line to check the vertex input. Can comment it out if you don't need it.
             self.insert_vertex(self.__root,0,tin.get_domain(),i,tin)
         # ADD THE CODE for inserting its triangles
-        print("START INPUT TRIANGLES")
         for i in range(tin.get_tris_num()):
-            print("INSERT TRIANGLES " + tin.get_tris(i))
+            print("INSERT TRIANGLES " + str(tin.get_tris(i)))
             self.insert_triangle(self.__root,0,tin.get_domain(),i,tin)
-        print("Total number of triangles is " + tin.get_tris_num())
-        print("END INPUT TRIANGLES")
+        print("START TRIANGLE PR")
+        self.pre_order(self.__root,0)
+        print("END TRIANGLE PR")
         #  End of the build_tree() function
+    def pre_order(self,node,node_label):
+        if(node==None):
+            return 
+        else:
+            typeNode = "INTERNAL LEAF"
+            if (node.is_leaf()): # FULL LEAF or EMPTY LEAF
+                if(node.get_vertices_num() == 0):
+                    typeNode = "EMPTY LEAF"
+                else:
+                    typeNode = "FULL LEAF"
+            print(str(node_label) + " " + typeNode)
+            if(typeNode == "FULL LEAF"):
+                vertices = node.get_vertices()
+                tris = node.get_triangles()
+                print("  V " +  str(len(vertices)) + " " + str(vertices))
+                print("  T " + str(len(tris)) + " " + str(tris))
+            for i in range(4): # for the four children
+                if(node.is_leaf()):
+                    self.pre_order(None, 4*node_label+i+1)
+                else:
+                    self.pre_order(node.get_child(i),4*node_label+i+1)
+
 
     def insert_vertex(self,node,node_label,node_domain,v_index,tin):
         if node_domain.contains_point(tin.get_vertex(v_index),tin.get_domain().get_max_point()):
@@ -55,11 +77,11 @@ class Tree(object):
 
     def insert_triangle(self,node,node_label,node_domain,t_index,tin):
         tri = tin.get_tris(t_index) # get the triangle (v1,v2,v3)
-        print("INSERT TRIANGLE " + t_index + " - " + tri[0] + " " + tri[1] + " " + tri[2])
+        print("INSERT TRIANGLE " + str(t_index) + " - " +  str(tri[0]) + " " + str(tri[1]) + " " + str(tri[2]))
         for i in range(3): # three extreme vertices
             v_index = tri[i] # get the index of the triangle vertex
             vertex = tin.get_vertex(v_index) # get the corresponding vertex object
-            node_to_insert = point_query(node, node_label, node_domain, vertex, tin) # get the node to be inserted
+            node_to_insert = self.point_query(node, node_label, node_domain, vertex, tin) # get the node to be inserted
             if(t_index not in node_to_insert.get_triangles()): # if not already existing    
                 node_to_insert.add_triangle(t_index) # insert the triangle to the node
 
