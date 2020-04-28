@@ -1,4 +1,5 @@
 from point import Point
+import numpy as np
 
 class Vertex(Point):
     """ A Vertex is an extension of Class Point and takes (x,y) attributes plus an elevation."""
@@ -50,3 +51,13 @@ class Vertex(Point):
 
     def __str__(self):
         return "Vertex(%s,%s,%s)"%(self.get_x(),self.get_y(),self.get_z())
+
+    # calculate the angle at this vertex provided with other two adjacent vertices
+    def angle(self,v1,v3):
+        print("Calculate angle")
+        print(self.get_z())
+        V21 = [v1.get_c(0)-self.get_c(0),v1.get_c(1)-self.get_c(1),v1.get_z()-self.get_z()]
+        V23 = [v3.get_c(0)-self.get_c(0),v3.get_c(1)-self.get_c(1),v3.get_z()-self.get_z()]
+        cos_angle = np.dot(V21, V23) / (np.sqrt(np.dot(V21, V21)) * np.sqrt(np.dot(V23, V23)))
+        angle = np.arccos(cos_angle)
+        return angle

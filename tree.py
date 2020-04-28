@@ -35,8 +35,10 @@ class Tree(object):
 
     def writeOutput(self, tin):
         vvs_dict={}
+        curvature_dict={}
         self.extract_VV(self.__root,tin,vvs_dict)
         roughness_dict, maximum_vertices = self.calRoughandMax(tin,vvs_dict)
+        self.calCurvature(self.__root, tin, curvature_dict)
         # write to files
         rough_file = "roughness.txt" 
         with open(rough_file,'w') as ofs:
@@ -47,6 +49,10 @@ class Tree(object):
             maxf.write("{}\n".format(len(maximum_vertices)))
             for i in range(len(maximum_vertices)):
                 maxf.write("{} ".format(maximum_vertices[i]))
+        curvature_file = "curvature.txt"
+        with open(curvature_file,'w') as cur:
+            for i in range(len(curvature_dict)):
+                cur.write("{} {}\n".format(i, curvature_dict[i]))
 
     # calculate roughness and maximum given the tin and VV relationships
     def calRoughandMax(self, tin,vvs_dict):
@@ -66,7 +72,7 @@ class Tree(object):
             for vertex in value:
                 dev += (tin.get_vertex(vertex).get_z() - ele_mean)**2
             dev = (dev/len(value))**(0.5)
-            roughness_dict[key] = dev
+            roughness_dict[key] = round(dev,2)
             if(flag): # if the vertex is the maximum
                 maximum_vertices.append(key)
         # for i in range(len(roughness_dict)):
@@ -97,7 +103,6 @@ class Tree(object):
                     self.pre_order(None, 4*node_label+i+1)
                 else:
                     self.pre_order(node.get_child(i),4*node_label+i+1)
-
 
     def insert_vertex(self,node,node_label,node_domain,v_index,tin):
         if node_domain.contains_point(tin.get_vertex(v_index),tin.get_domain().get_max_point()):
@@ -132,7 +137,7 @@ class Tree(object):
     # iterate the tree and return a list of lists that contain the corresponding tris indices with respect to that vertex
     # should note thant here vvs_dic is a diction, whose key is the vertex index and the value is the set of adjacent vertices
     # vvs_dic is initially empty and will be updated when iterating the nodes in the tree
-    def extract_VV(self, node,tin, vvs_dic):
+    def extract_VV(self, node, tin, vvs_dic):
         if(node == None):
             return 
         else:
@@ -176,6 +181,58 @@ class Tree(object):
                         adjacent_set.add(vertex)
             nodeVV[key] = adjacent_set
         return nodeVV
+    
+    def calCurvature(self, node, tin, cur_dict):
+        if(node == None):
+            return 
+        else:
+            if (node.is_leaf()): # FULL LEAF or EMPTY LEAF
+                if(node.get_vertices_num() == 0): # EMPTY
+                    pass
+                else:
+                    vertices = node.get_vertices() # get the ids of the vertices that belong to that node
+                    tris = node.get_triangles() # get the index of triangles corresponding to the node
+                    nodeVT = {} # e.g. nodeVT = {1:[12,3,4], 3:[1,2,9]}
+                    for vertex in vertices:
+                        vertexVT = []
+                        for tri in tris:
+                            if(self.checkIsInTri(vertex,tin.get_tris(tri))):
+                                vertexVT.append(tri)
+                        nodeVT[vertex] = vertexVT
+                    # finished getting VT relationships
+                    for key, value in nodeVT.items():
+                        theta = 0
+                        dupList = [] # this list is used to identify whethere there is duplication for neighboor
+                        for tri in value:
+                            v1, v3 = self.findOtherTwoVertices(key,tin.get_tris(tri))
+                            theta += tin.get_vertex(key).angle(tin.get_vertex(v1),tin.get_vertex(v3)) # the angle at v in single triangle
+                            if v1 not in dupList:
+                                dupList.append(v1)
+                            else:
+                                dupList.remove(v1)
+                            if v3 not in dupList:
+                                dupList.append(v3)
+                            else:
+                                dupList.append(v3)
+                        # by this time, the dupList should be empty if the vertex we are checking is INTERNAL
+                        if (len(dupList) == 0): # INTERNAL
+                            curvature = 2*math.pi - theta
+                        else: # BOUNDARY
+                            curvature = math.pi - theta
+                        cur_dict[key] = round(curvature,2)
+            for i in range(4): # for the four children
+                if(node.is_leaf()):
+                    self.calCurvature(None, tin, cur_dict)
+                else:
+                    self.calCurvature(node.get_child(i), tin, cur_dict)
+
+    # return another two vertices given one vertex
+    def findOtherTwoVertices(self, vertex, triangle):
+        others = []
+        for i in range(3):
+            if vertex != triangle[i]:
+                others.append(i)
+        return others[0], others[1]
 
     def point_query(self, node, node_label, node_domain, search_point, tin):
         # node: Node object; node_label: int; node_domain: Domain object;search_point: Vertex object, the vertex you want to search
