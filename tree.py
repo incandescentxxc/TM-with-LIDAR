@@ -32,6 +32,50 @@ class Tree(object):
         self.pre_order(self.__root,0)
         print("END TRIANGLE PR")
         #  End of the build_tree() function
+
+    def writeOutput(self, tin):
+        vvs_dict={}
+        self.extract_VV(self.__root,tin,vvs_dict)
+        roughness_dict, maximum_vertices = self.calRoughandMax(tin,vvs_dict)
+        # write to files
+        rough_file = "roughness.txt" 
+        with open(rough_file,'w') as ofs:
+            for i in range(len(roughness_dict)):
+                ofs.write("{} {}\n".format(i, roughness_dict[i]))
+        maximum_file = "maximum.txt"
+        with open(maximum_file,'w') as maxf:
+            maxf.write("{}\n".format(len(maximum_vertices)))
+            for i in range(len(maximum_vertices)):
+                maxf.write("{} ".format(maximum_vertices[i]))
+
+    # calculate roughness and maximum given the tin and VV relationships
+    def calRoughandMax(self, tin,vvs_dict):
+        roughness_dict = {}
+        maximum_vertices = []
+        for key, value in vvs_dict.items():
+            ele_mean = 0
+            dev = 0
+            current_ele = tin.get_vertex(key).get_z()
+            flag = True
+            for vertex in value:
+                vertex_ele = tin.get_vertex(vertex).get_z()
+                ele_mean += vertex_ele
+                if(flag and vertex_ele > current_ele):
+                    flag = False  
+            ele_mean /= len(value)
+            for vertex in value:
+                dev += (tin.get_vertex(vertex).get_z() - ele_mean)**2
+            dev = (dev/len(value))**(0.5)
+            roughness_dict[key] = dev
+            if(flag): # if the vertex is the maximum
+                maximum_vertices.append(key)
+        # for i in range(len(roughness_dict)):
+        #     print(str(i) + ": " + str(roughness_dict[i]))
+        # print("Maximum vertices are: ")
+        # for item in maximum_vertices:
+        #     print(item)
+        return roughness_dict, maximum_vertices
+
     def pre_order(self,node,node_label):
         if(node==None):
             return 
@@ -85,7 +129,53 @@ class Tree(object):
             if(t_index not in node_to_insert.get_triangles()): # if not already existing    
                 node_to_insert.add_triangle(t_index) # insert the triangle to the node
 
+    # iterate the tree and return a list of lists that contain the corresponding tris indices with respect to that vertex
+    # should note thant here vvs_dic is a diction, whose key is the vertex index and the value is the set of adjacent vertices
+    # vvs_dic is initially empty and will be updated when iterating the nodes in the tree
+    def extract_VV(self, node,tin, vvs_dic):
+        if(node == None):
+            return 
+        else:
+            if (node.is_leaf()): # FULL LEAF or EMPTY LEAF
+                if(node.get_vertices_num() == 0):
+                    pass
+                else:
+                    vertices = node.get_vertices() # get the ids of the vertices that belong to that node
+                    tris = node.get_triangles() # get the index of triangles corresponding to the node
+                    nodeVT = {} # e.g. nodeVT = {1:[12,3,4], 3:[1,2,9]}
+                    for vertex in vertices:
+                        vertexVT = []
+                        for tri in tris:
+                            if(self.checkIsInTri(vertex,tin.get_tris(tri))):
+                                vertexVT.append(tri)
+                        nodeVT[vertex] = vertexVT
+                    nodeVV = self.extract_VT(nodeVT,tin) # e.g. nodeVV = {1:{13,42,10,23}, 3:{12,13,34}}
+                    for key, value in nodeVV.items():
+                        vvs_dic[key] = value
+            for i in range(4): # for the four children
+                if(node.is_leaf()):
+                    self.extract_VV(None,tin,vvs_dic)
+                else:
+                    self.extract_VV(node.get_child(i), tin, vvs_dic)
 
+    def checkIsInTri(self, vertex, triangle):
+        for ver in triangle:
+            if vertex == ver:
+                return True
+        return False
+
+    # this is the function to extract VV relationship from a given VT relationship
+    def extract_VT(self,nodeVT,tin): # e.g. nodeVT = {1:[12,3,4], 3:[1,2,9]}
+        nodeVV = {}
+        for key, value in nodeVT.items():
+            adjacent_set = set()
+            for tri in value:
+                tri_tuple = tin.get_tris(tri)
+                for vertex in tri_tuple:
+                    if(vertex != key): # exclude itself
+                        adjacent_set.add(vertex)
+            nodeVV[key] = adjacent_set
+        return nodeVV
 
     def point_query(self, node, node_label, node_domain, search_point, tin):
         # node: Node object; node_label: int; node_domain: Domain object;search_point: Vertex object, the vertex you want to search

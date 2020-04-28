@@ -158,7 +158,7 @@ if __name__ == '__main__':
     # usage: pts_file capacity
     tin_file, pts, zs, tris = generate_TIN(sys.argv[1]) # sys.argv[1] should be the point file name
     # the above function will generate the TIN based on the input point file
-    plot_tin_with_marks(pts[:,0], pts[:,1], zs,tris,zs, [], [],[],"tin-og") # This function will plot the original TIN
+    # plot_tin_with_marks(pts[:,0], pts[:,1], zs,tris,zs, [], [],[],"tin-og") # This function will plot the original TIN
 
     reader = Reader() # initialize a Reader object
 
@@ -172,4 +172,6 @@ if __name__ == '__main__':
     tree = Tree(int(capacity)) #initialize a Tree object.
     tree.build_tree(tin)   # build_tree() will generate a Triangle PR-quadtree on the input TIN.
     # You need to COMPLETE the build_tree() function in the tree.py
+    tree.writeOutput(tin) # for the project of the second part
+
 
