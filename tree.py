@@ -36,8 +36,9 @@ class Tree(object):
     def writeOutput(self, tin):
         vvs_dict={}
         curvature_dict={}
-        self.extract_VV(self.__root,tin,vvs_dict)
-        roughness_dict, maximum_vertices = self.calRoughandMax(tin,vvs_dict)
+        roughness_dict = {}
+        maximum_vertices =[]
+        self.getRoughandMax(self.__root,tin,roughness_dict, maximum_vertices)
         self.calCurvature(self.__root, tin, curvature_dict)
         # write to files
         rough_file = "roughness.txt" 
@@ -53,34 +54,6 @@ class Tree(object):
         with open(curvature_file,'w') as cur:
             for i in range(len(curvature_dict)):
                 cur.write("{} {}\n".format(i, curvature_dict[i]))
-
-    # calculate roughness and maximum given the tin and VV relationships
-    def calRoughandMax(self, tin,vvs_dict):
-        roughness_dict = {}
-        maximum_vertices = []
-        for key, value in vvs_dict.items():
-            ele_mean = 0
-            dev = 0
-            current_ele = tin.get_vertex(key).get_z()
-            flag = True
-            for vertex in value:
-                vertex_ele = tin.get_vertex(vertex).get_z()
-                ele_mean += vertex_ele
-                if(flag and vertex_ele > current_ele):
-                    flag = False  
-            ele_mean /= len(value)
-            for vertex in value:
-                dev += (tin.get_vertex(vertex).get_z() - ele_mean)**2
-            dev = (dev/len(value))**(0.5)
-            roughness_dict[key] = round(dev,2)
-            if(flag): # if the vertex is the maximum
-                maximum_vertices.append(key)
-        # for i in range(len(roughness_dict)):
-        #     print(str(i) + ": " + str(roughness_dict[i]))
-        # print("Maximum vertices are: ")
-        # for item in maximum_vertices:
-        #     print(item)
-        return roughness_dict, maximum_vertices
 
     def pre_order(self,node,node_label):
         if(node==None):
@@ -137,7 +110,7 @@ class Tree(object):
     # iterate the tree and return a list of lists that contain the corresponding tris indices with respect to that vertex
     # should note thant here vvs_dic is a diction, whose key is the vertex index and the value is the set of adjacent vertices
     # vvs_dic is initially empty and will be updated when iterating the nodes in the tree
-    def extract_VV(self, node, tin, vvs_dic):
+    def getRoughandMax(self, node, tin, roughness_dict, maximum_vertices):
         if(node == None):
             return 
         else:
@@ -145,43 +118,42 @@ class Tree(object):
                 if(node.get_vertices_num() == 0):
                     pass
                 else:
-                    vertices = node.get_vertices() # get the ids of the vertices that belong to that node
-                    tris = node.get_triangles() # get the index of triangles corresponding to the node
-                    nodeVT = {} # e.g. nodeVT = {1:[12,3,4], 3:[1,2,9]}
-                    for vertex in vertices:
-                        vertexVT = []
-                        for tri in tris:
-                            if(self.checkIsInTri(vertex,tin.get_tris(tri))):
-                                vertexVT.append(tri)
-                        nodeVT[vertex] = vertexVT
-                    nodeVV = self.extract_VT(nodeVT,tin) # e.g. nodeVV = {1:{13,42,10,23}, 3:{12,13,34}}
-                    for key, value in nodeVV.items():
-                        vvs_dic[key] = value
+                    nodeVT = node.get_NodeVT(tin)
+                    nodeVV = node.get_NodeVV(nodeVT,tin)# e.g. nodeVV = {1:{13,42,10,23}, 3:{12,13,34}}
+                    # in this way, we didn't store all VV relationships. Instead, we just calculate the roughness/maximum of
+                    # a certain vertex when travsersing the node that contains it
+                    self.calRoughandMax(tin,nodeVV,roughness_dict,maximum_vertices)
             for i in range(4): # for the four children
                 if(node.is_leaf()):
-                    self.extract_VV(None,tin,vvs_dic)
+                    self.getRoughandMax(None,tin,roughness_dict, maximum_vertices)
                 else:
-                    self.extract_VV(node.get_child(i), tin, vvs_dic)
+                    self.getRoughandMax(node.get_child(i), tin, roughness_dict, maximum_vertices)
 
-    def checkIsInTri(self, vertex, triangle):
-        for ver in triangle:
-            if vertex == ver:
-                return True
-        return False
+        # calculate roughness and maximum given the tin and node VV relationships
+    def calRoughandMax(self, tin, nodeVV, roughness_dict, maximum_vertices):
+        for key, value in nodeVV.items():
+            ele_mean = 0
+            dev = 0
+            current_ele = tin.get_vertex(key).get_z()
+            flag = True
+            for vertex in value:
+                vertex_ele = tin.get_vertex(vertex).get_z()
+                ele_mean += vertex_ele
+                if(flag and vertex_ele > current_ele):
+                    flag = False  
+            ele_mean /= len(value)
+            for vertex in value:
+                dev += (tin.get_vertex(vertex).get_z() - ele_mean)**2
+            dev = (dev/len(value))**(0.5)
+            roughness_dict[key] = round(dev,2)
+            if(flag): # if the vertex is the maximum
+                maximum_vertices.append(key)
+        # for i in range(len(roughness_dict)):
+        #     print(str(i) + ": " + str(roughness_dict[i]))
+        # print("Maximum vertices are: ")
+        # for item in maximum_vertices:
+        #     print(item)
 
-    # this is the function to extract VV relationship from a given VT relationship
-    def extract_VT(self,nodeVT,tin): # e.g. nodeVT = {1:[12,3,4], 3:[1,2,9]}
-        nodeVV = {}
-        for key, value in nodeVT.items():
-            adjacent_set = set()
-            for tri in value:
-                tri_tuple = tin.get_tris(tri)
-                for vertex in tri_tuple:
-                    if(vertex != key): # exclude itself
-                        adjacent_set.add(vertex)
-            nodeVV[key] = adjacent_set
-        return nodeVV
-    
     def calCurvature(self, node, tin, cur_dict):
         if(node == None):
             return 
@@ -190,21 +162,15 @@ class Tree(object):
                 if(node.get_vertices_num() == 0): # EMPTY
                     pass
                 else:
-                    vertices = node.get_vertices() # get the ids of the vertices that belong to that node
-                    tris = node.get_triangles() # get the index of triangles corresponding to the node
-                    nodeVT = {} # e.g. nodeVT = {1:[12,3,4], 3:[1,2,9]}
-                    for vertex in vertices:
-                        vertexVT = []
-                        for tri in tris:
-                            if(self.checkIsInTri(vertex,tin.get_tris(tri))):
-                                vertexVT.append(tri)
-                        nodeVT[vertex] = vertexVT
+                    nodeVT = node.get_NodeVT(tin) # e.g. nodeVT = {1:[12,3,4], 3:[1,2,9]}
                     # finished getting VT relationships
                     for key, value in nodeVT.items():
                         theta = 0
                         dupList = [] # this list is used to identify whethere there is duplication for neighboor
                         for tri in value:
                             v1, v3 = self.findOtherTwoVertices(key,tin.get_tris(tri))
+                            if(v3 == key):
+                                print("SHSSHHSHSHHSHSHHSHHHSHS\n")
                             theta += tin.get_vertex(key).angle(tin.get_vertex(v1),tin.get_vertex(v3)) # the angle at v in single triangle
                             if v1 not in dupList:
                                 dupList.append(v1)
@@ -230,8 +196,8 @@ class Tree(object):
     def findOtherTwoVertices(self, vertex, triangle):
         others = []
         for i in range(3):
-            if vertex != triangle[i]:
-                others.append(i)
+            others.append(triangle[i])
+        others.remove(vertex)
         return others[0], others[1]
 
     def point_query(self, node, node_label, node_domain, search_point, tin):

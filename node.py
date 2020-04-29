@@ -61,7 +61,6 @@ class Node(object):
                 return True
         return False
 
-
     def get_vertices(self): # returns the list of vertex ids. Should implement similar function for triangles.
         return self.__vertex_ids
     
@@ -73,3 +72,29 @@ class Node(object):
 
     def is_leaf(self): # returns True if the node is leaf node, otherwise returns False
         return self.__children == None
+
+    def get_NodeVT(self,tin):
+        vertices = self.get_vertices() # get the ids of the vertices that belong to that node
+        tris = self.get_triangles() # get the index of triangles corresponding to the node
+        nodeVT = {} # e.g. nodeVT = {1:[12,3,4], 3:[1,2,9]}
+        for vertex in vertices:
+            nodeVT[vertex] = []
+        for tri in tris:
+            triangle = tin.get_tris(tri)
+            for vertex in triangle:
+                if vertex in vertices: # if the vertex is within that node
+                    nodeVT[vertex].append(tri)
+        return nodeVT
+    
+    # this is the function to extract VV relationship from a given VT relationship
+    def get_NodeVV(self, nodeVT, tin):# e.g. nodeVT = {1:[12,3,4], 3:[1,2,9]}
+        nodeVV = {}# e.g. nodeVV = {1:{13,42,10,23}, 3:{12,13,34}}
+        for key, value in nodeVT.items():
+            adjacent_set = set()
+            for tri in value:
+                tri_tuple = tin.get_tris(tri)
+                for vertex in tri_tuple:
+                    if(vertex != key): # exclude itself
+                        adjacent_set.add(vertex)
+            nodeVV[key] = adjacent_set
+        return nodeVV
