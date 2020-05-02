@@ -33,27 +33,36 @@ class Tree(object):
         print("END TRIANGLE PR")
         #  End of the build_tree() function
 
-    def writeOutput(self, tin):
-        vvs_dict={}
+    # the driver function to write the output required to the files
+    def writeOutput(self, tin, task):
         curvature_dict={}
         roughness_dict = {}
         maximum_vertices =[]
         self.getRoughandMax(self.__root,tin,roughness_dict, maximum_vertices)
         self.calCurvature(self.__root, tin, curvature_dict)
+        maximum_vertices = sorted(maximum_vertices)
+        roughnessList = []
+        curvatureList = []
         # write to files
-        rough_file = "roughness.txt" 
-        with open(rough_file,'w') as ofs:
-            for i in range(len(roughness_dict)):
-                ofs.write("{} {}\n".format(i, roughness_dict[i]))
-        maximum_file = "maximum.txt"
-        with open(maximum_file,'w') as maxf:
-            maxf.write("{}\n".format(len(maximum_vertices)))
-            for i in range(len(maximum_vertices)):
-                maxf.write("{} ".format(maximum_vertices[i]))
-        curvature_file = "curvature.txt"
-        with open(curvature_file,'w') as cur:
-            for i in range(len(curvature_dict)):
-                cur.write("{} {}\n".format(i, curvature_dict[i]))
+        if (task == 0 or task == 1):
+            rough_file = "roughness.txt" 
+            with open(rough_file,'w') as ofs:
+                for i in range(len(roughness_dict)):
+                    ofs.write("{} {}\n".format(i, roughness_dict[i]))
+                    roughnessList.append(roughness_dict[i])
+            curvature_file = "curvature.txt"
+            with open(curvature_file,'w') as cur:
+                for i in range(len(curvature_dict)):
+                    cur.write("{} {}\n".format(i, curvature_dict[i]))
+                    curvatureList.append(curvature_dict[i])
+        if (task == 0 or task == 2):
+            maximum_file = "maximum.txt"
+            with open(maximum_file,'w') as maxf:
+                maxf.write("{}\n".format(len(maximum_vertices)))
+                for i in range(len(maximum_vertices)):
+                    maxf.write("{} ".format(maximum_vertices[i]))
+        return roughnessList, curvatureList, maximum_vertices
+
 
     def pre_order(self,node,node_label):
         if(node==None):
@@ -107,15 +116,13 @@ class Tree(object):
             if(t_index not in node_to_insert.get_triangles()): # if not already existing    
                 node_to_insert.add_triangle(t_index) # insert the triangle to the node
 
-    # iterate the tree and return a list of lists that contain the corresponding tris indices with respect to that vertex
-    # should note thant here vvs_dic is a diction, whose key is the vertex index and the value is the set of adjacent vertices
-    # vvs_dic is initially empty and will be updated when iterating the nodes in the tree
+    # iterate the tree to calculate and store the roughness an maximum (whether maximum node) into a dictionary
     def getRoughandMax(self, node, tin, roughness_dict, maximum_vertices):
         if(node == None):
             return 
         else:
             if (node.is_leaf()): # FULL LEAF or EMPTY LEAF
-                if(node.get_vertices_num() == 0):
+                if(node.get_vertices_num() == 0): # Empty
                     pass
                 else:
                     nodeVT = node.get_NodeVT(tin)
@@ -148,11 +155,6 @@ class Tree(object):
             roughness_dict[key] = round(dev,2)
             if(flag): # if the vertex is the maximum
                 maximum_vertices.append(key)
-        # for i in range(len(roughness_dict)):
-        #     print(str(i) + ": " + str(roughness_dict[i]))
-        # print("Maximum vertices are: ")
-        # for item in maximum_vertices:
-        #     print(item)
 
     def calCurvature(self, node, tin, cur_dict):
         if(node == None):
@@ -169,8 +171,6 @@ class Tree(object):
                         dupList = [] # this list is used to identify whethere there is duplication for neighboor
                         for tri in value:
                             v1, v3 = self.findOtherTwoVertices(key,tin.get_tris(tri))
-                            if(v3 == key):
-                                print("SHSSHHSHSHHSHSHHSHHHSHS\n")
                             theta += tin.get_vertex(key).angle(tin.get_vertex(v1),tin.get_vertex(v3)) # the angle at v in single triangle
                             if v1 not in dupList:
                                 dupList.append(v1)
@@ -179,7 +179,7 @@ class Tree(object):
                             if v3 not in dupList:
                                 dupList.append(v3)
                             else:
-                                dupList.append(v3)
+                                dupList.remove(v3)
                         # by this time, the dupList should be empty if the vertex we are checking is INTERNAL
                         if (len(dupList) == 0): # INTERNAL
                             curvature = 2*math.pi - theta

@@ -172,6 +172,32 @@ if __name__ == '__main__':
     tree = Tree(int(capacity)) #initialize a Tree object.
     tree.build_tree(tin)   # build_tree() will generate a Triangle PR-quadtree on the input TIN.
     # You need to COMPLETE the build_tree() function in the tree.py
-    tree.writeOutput(tin) # for the project of the second part
+
+    ''' 
+    Note I added this on purpose to distinguish the first and the second task
+    Note the extra task is also included in the first task by default
+    0 stands for execute all three tasks in one shot
+    1 stands for execute the first and the extra task
+    2 stands for execute the second task
+    '''
+    task = int(sys.argv[3])
+    print(pts)
+    roughnessList, curvatureList, maximum_vertices = tree.writeOutput(tin, task) # for the project of the second part
+    # Plot the three graphs
+    print(roughnessList)
+    print(curvatureList)
+    print(maximum_vertices)
+    if (task == 0 or task == 1):
+        plot_tin_with_marks(pts[:,0], pts[:,1], zs,tris,roughnessList, [], [],[],"tin-roughness"+capacity) # This function will plot the TIN with roughness colored
+        plot_tin_with_marks(pts[:,0], pts[:,1], zs,tris,curvatureList, [], [],[],"tin-curvature"+capacity) # This function will plot the TIN with curvature colored
+    if (task == 0 or task == 2):
+        print('ss')
+        points= np.empty(shape=[0, 2])
+        zpoints = list()
+        for vertex in maximum_vertices:
+            points = np.append(points,[[pts[vertex][0], pts[vertex][1]]],axis=0)
+            zpoints.append(zs[vertex])
+        plot_tin_with_marks(pts[:,0], pts[:,1], zs,tris,zs, points[:,0], points[:,1],zpoints,"tin-max"+capacity) # This function will plot the TIN with curvature colored
+ 
 
 
