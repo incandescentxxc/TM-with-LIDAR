@@ -184,14 +184,13 @@ if __name__ == '__main__':
     print(pts)
     roughnessList, curvatureList, maximum_vertices = tree.writeOutput(tin, task) # for the project of the second part
     # Plot the three graphs
-    print(roughnessList)
-    print(curvatureList)
-    print(maximum_vertices)
+    # print(roughnessList)
+    # print(curvatureList)
+    # print(maximum_vertices)
     if (task == 0 or task == 1):
         plot_tin_with_marks(pts[:,0], pts[:,1], zs,tris,roughnessList, [], [],[],"tin-roughness"+capacity) # This function will plot the TIN with roughness colored
         plot_tin_with_marks(pts[:,0], pts[:,1], zs,tris,curvatureList, [], [],[],"tin-curvature"+capacity) # This function will plot the TIN with curvature colored
     if (task == 0 or task == 2):
-        print('ss')
         points= np.empty(shape=[0, 2])
         zpoints = list()
         for vertex in maximum_vertices:
